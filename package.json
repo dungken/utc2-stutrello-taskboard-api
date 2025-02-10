@@ -1,0 +1,13 @@
+{
+  "name": "trello_apis",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Trello APIs DungDev MERN Stack Pro",
+  "main": "src/server.js",
+  "author": "Dungken",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "express": "4.18.2"
+  }
+}
