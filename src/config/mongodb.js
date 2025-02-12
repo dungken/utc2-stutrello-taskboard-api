@@ -1,18 +1,11 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-const MONGODB_URI = 'mongodb+srv://dungkendev:EdcwlgZySjCp0Krs@cluster0.gzxim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
-const DATABASE_NAME = 'trello-dungken-database-mern-stack'
-
+import { env } from '~/config/environment'
 const { MongoClient, ServerApiVersion } = require('mongodb')
 
 // Khoi tao mot doi tuong trelloDatabaseInstance la null de thao tac voi database (vi chua ket noi)
 let trelloDatabaseInstance = null
 
 // Khoi tao mot doi tuong mongoClientInstance de ket noi voi MongoDB
-const mongoClientInstance = new MongoClient(MONGODB_URI, {
+const mongoClientInstance = new MongoClient(env.MONGODB_URI, {
   // Luu y: serverApi phai duoc cung cap de su dung cac tinh nang moi nhat cua MongoDB
   // Doc them: https://www.mongodb.com/docs/drivers/node/current/fundamentals/stable-api/
   serverApi: {
@@ -28,7 +21,13 @@ export const CONNECT_DB = async () => {
   await mongoClientInstance.connect()
 
   // Ket noi thanh cong thi lay ra Database theo ten va gan nguoc no lai vao bien trelloDatabaseInstance
-  trelloDatabaseInstance = mongoClientInstance.db(DATABASE_NAME)
+  trelloDatabaseInstance = mongoClientInstance.db(env.DATABASE_NAME)
+}
+
+// Dong ket noi toi Database
+export const CLOSE_DB = async () => {
+  // Dong ket noi voi MongoDB
+  await mongoClientInstance.close()
 }
 
 // Function GET_DB (khong async) de lay ra doi tuong trelloDatabaseInstance sau khi da ket noi thanh cong voi MongoDB de co the su dung trong cac file khac
