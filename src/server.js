@@ -1,27 +1,25 @@
-/* eslint-disable no-console */
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-
 import express from 'express'
-import { CONNECT_DB, GET_DB } from '~/config/mongodb'
+import exitHook from 'async-exit-hook'
+import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
+import { env } from '~/config/environment'
 
 const START_SERVER = () => {
   const app = express()
 
-  const hostname = 'localhost'
-  const port = 8017
-
   app.get('/', async (req, res) => {
-    console.log(await GET_DB().listCollections().toArray())
-
     res.end('<p>Hello World!</p><hr>')
   })
 
-  app.listen(port, hostname, () => {
-    console.log(`3. Hello Dung Dev, I am running at http://${ hostname }:${ port }/`)
+  app.listen(env.APP_PORT, env.APP_HOST, () => {
+    console.log(`3. Hello ${env.AUTHOR}, I am running at http://${ env.APP_HOST }:${ env.APP_PORT }/`)
+  })
+
+  // Thuc hien cac tac vu cleanup truoc khi dung server
+  // Doc them: https://stackoverflow.com/questions/14031763/doing-a-cleanup-action-just-before-node-js-exits
+  exitHook(() => {
+    console.log('4. Server is shutting down...')
+    CLOSE_DB()
+    console.log('5. Closed MongoDB connection successfully!')
   })
 }
 
