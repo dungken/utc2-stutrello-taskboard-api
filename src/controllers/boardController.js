@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
+import ApiError from '~/utils/ApiError'
 
-const createNew = async (req, res) => {
+const createNew = async (req, res, next) => {
   try {
     // console.log('req.body:', req.body)
     // console.log('req.query:', req.query)
@@ -10,14 +11,11 @@ const createNew = async (req, res) => {
     // console.log('req.jwtDecoded:', req.jwtDecoded)
 
     // Dieu huong du lieu sang tang Service de xu ly
+    throw new ApiError(StatusCodes.BAD_GATEWAY, 'Error from Controller: API create new board')
 
     // Sau khi xu ly xong, tra ve ket qua cho Client
-    res.status(StatusCodes.CREATED).json({ message: 'POST from Controller: API create new board' })
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      errors: error.message
-    })
-  }
+    // res.status(StatusCodes.CREATED).json({ message: 'POST from Controller: API create new board' })
+  } catch (error) { next(error) }
 }
 
 export const boardController = {
