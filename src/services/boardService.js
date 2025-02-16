@@ -5,6 +5,7 @@ import { StatusCodes } from 'http-status-codes'
 import { boardModel } from '~/models/boardModel'
 import ApiError from '~/utils/ApiError'
 import { slugify } from '~/utils/fomatter'
+import { cloneDeep } from 'lodash'
 
 const createNew = async (reqBody) => {
   try {
@@ -32,7 +33,23 @@ const getDetails = async (boardId) => {
   try {
     const board = await boardModel.getDetails(boardId)
     if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
-    return board
+
+    // Step 1: Clone board object
+    const boardRes = cloneDeep(board)
+
+    // Step 2: Filter cards by columnId
+    boardRes.columns.forEach(column => {
+      // Using toString of JavaScript Object
+      // boardRes.cards = boardRes.cards.filter(card => card.columnId.toString() === column._id.toString())
+
+      // Using equals method of Mongoose ObjectId
+      column.cards = boardRes.cards.filter(card => card.columnId.equals(column._id))
+    })
+
+    // Step 3: Delete cards from boardRes
+    delete boardRes.cards
+
+    return boardRes
   } catch (error) { throw error }
 }
 
