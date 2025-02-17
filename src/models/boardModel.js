@@ -85,7 +85,6 @@ const pushColumnOrderIds = async (column) => {
   } catch (error) { throw new Error(error) }
 }
 
-
 const update = async (boardId, updateData) => {
   try {
     // Remove invalid fields
@@ -94,6 +93,11 @@ const update = async (boardId, updateData) => {
         delete updateData[fieldName]
       }
     })
+
+    // Doi voi nhung du lieu lien quan ObjectId, can phai chuyen ve kieu ObjectId
+    if (updateData.columnOrderIds) {
+      updateData.columnOrderIds = updateData.columnOrderIds.map(_id => new ObjectId(String(_id)))
+    }
 
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
       { _id: new ObjectId(String(boardId)) },
