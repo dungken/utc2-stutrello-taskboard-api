@@ -46,7 +46,7 @@ const update = async (req, res, next) => {
 
   try {
     // Chi dinh abortEarly: false de hien thi tat ca loi
-    await correctCondition.validateAsync(req.body, { 
+    await correctCondition.validateAsync(req.body, {
       abortEarly: false,
       allowUnknown: true // Cho phep request co them cac truong khac khong duoc dinh nghia trong schema
     })
