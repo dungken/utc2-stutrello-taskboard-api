@@ -15,6 +15,6 @@ Router.route('/')
 
 Router.route('/:id')
   .get(boardController.getDetails)
-  .put() // update
+  .put(boardValidation.update, boardController.update)
 
 export const APIs_V1 = Router

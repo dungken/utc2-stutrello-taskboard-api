@@ -33,6 +33,31 @@ const createNew = async (req, res, next) => {
   }
 }
 
+
+const update = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    title: Joi.string().min(3).max(50).trim().strict(),
+    description: Joi.string().min(3).max(256).trim().strict(),
+    type: Joi.string().valid(...Object.values(BOARD_TYPES))
+    // columnOrderIds: Joi.array().items(
+    //   Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+    // ).default([])
+  })
+
+  try {
+    // Chi dinh abortEarly: false de hien thi tat ca loi
+    await correctCondition.validateAsync(req.body, { 
+      abortEarly: false,
+      allowUnknown: true // Cho phep request co them cac truong khac khong duoc dinh nghia trong schema
+    })
+    // Validate du lieu thanh cong thi request di tiep sang Controller
+    next()
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+  }
+}
+
 export const boardValidation = {
-  createNew
+  createNew,
+  update
 }
