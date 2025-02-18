@@ -1,4 +1,5 @@
 export const WHITELIST_DOMAINS = [
+  'https://trellox-web.vercel.app'
   // 'http://localhost:5173' // Khong can localhost nua vi o file/cors da luon cho phep moi truong dev (env.BUILD_MODE === 'dev')
   // sau khi deploy lên production thì domain sẽ thay đổi
 ]
