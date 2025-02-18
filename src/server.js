@@ -23,9 +23,17 @@ const START_SERVER = () => {
   // Middleware xu ly loi tap trung
   app.use(errorHandlingMiddleware)
 
-  app.listen(env.APP_PORT, env.APP_HOST, () => {
-    console.log(`3. Hello ${env.AUTHOR}, I am running at http://${ env.APP_HOST }:${ env.APP_PORT }/`)
-  })
+  // Moi truong production (hien tai dang support boi Render.com)
+  if (env.BUILD_MODE === 'prod') {
+    app.listen(process.env.PORT, () => {
+      console.log(`3. Production: Hello ${env.AUTHOR}, Backend server is running successfully at Port: ${process.env.PORT}`)
+    })
+  } else {
+    // Moi truong local dev
+    app.listen(env.LOCAL_DEV_APP_PORT, env.LOCAL_DEV_APP_HOST, () => {
+      console.log(`3. Local Dev: Hello ${env.AUTHOR}, I am running at http://${ env.LOCAL_DEV_APP_HOST }:${ env.LOCAL_DEV_APP_PORT }/`)
+    })
+  }
 
   // Thuc hien cac tac vu cleanup truoc khi dung server
   // Doc them: https://stackoverflow.com/questions/14031763/doing-a-cleanup-action-just-before-node-js-exits
