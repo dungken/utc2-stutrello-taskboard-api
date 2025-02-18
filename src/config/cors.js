@@ -9,9 +9,16 @@ export const corsOptions = {
   origin: function (origin, callback) {
     // Cho phép việc gọi API bằng POSTMAN trên môi trường dev,
     // Thông thường khi sử dụng postman thì cái origin sẽ có giá trị là undefined
-    if (!origin && env.BUILD_MODE === 'dev') {
+    // if (!origin && env.BUILD_MODE === 'dev') {
+    //   return callback(null, true)
+    // }
+
+    // Neu moi truong la local dev thi cho phep
+    if (env.BUILD_MODE === 'dev') {
       return callback(null, true)
     }
+
+    // Nguoi lai thi hien tai dang co 1 truong hop la: env.BUILD_MODE === 'prod'
 
     // Kiểm tra xem origin có phải là domain được chấp nhận hay không
     if (WHITELIST_DOMAINS.includes(origin)) {
