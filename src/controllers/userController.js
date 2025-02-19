@@ -8,6 +8,27 @@ const createNew = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const verifyAccount = async (req, res, next) => {
+  try {
+    const result = await userService.verifyAccount(req.body)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
+const login = async (req, res, next) => {
+  try {
+    const result = await userService.login(req.body)
+
+    // Xu ly tra ve http only cookie cho phia trinh duyet
+    console.log('🚀 ~ login ~ result:', result)
+
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 export const userController = {
-  createNew
+  createNew,
+  verifyAccount,
+  login
 }

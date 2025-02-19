@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { pickUser } from '~/utils/fomatter'
 import { WEBSITE_DOMAIN } from '~/utils/constants'
 import { BrevoProvider } from '~/providers/BrevoProvider'
+import { JwtProvider } from '~/providers/JwtProvider'
+import { env } from '~/config/environment'
 
 
 const createNew = async (reqBody) => {
@@ -35,7 +37,7 @@ const createNew = async (reqBody) => {
     const htmlContent = `
       <h3>Hi ${getNewUser.displayName},</h3>
       <p>Thank you for signing up with StuTrello TaskBoard. Please verify your email address by clicking the link below.</p>
-      <a href="${verificationLink}" target="_blank">Verify my email address</a>
+      <a href="${verificationLink}" target="_blank">Verify my email address: ${verificationLink}</a>
       <p>If you did not create an account with us, please ignore this email.</p>
       <p>Thank you!</p>
     `
@@ -44,12 +46,66 @@ const createNew = async (reqBody) => {
 
     // Tra ve thong tin cho phia Controller
     return pickUser(getNewUser)
-  } catch (error) { 
-    console.log('🚀 ~ createNew ~ error:', error)
-    throw error 
+  } catch (error) {
+    throw error
   }
 }
 
+const verifyAccount = async (reqBody) => {
+  try {
+    // Query user tu database
+    const existUser = await userModel.findOneByEmail(reqBody.email)
+
+    // Cac buoc kiem tra can thiet
+    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found!')
+    if (existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Account has been activated!')
+    if (existUser.verifyToken !== reqBody.token) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid token!')
+
+    // Neu nhu moi thu ok thi chung ta bat dau update lai thong tin user de verify account
+    const updateData = {
+      isActive: true,
+      verifyToken: null
+    }
+    // Thuc hien update thong tin user
+    const updatedUser = await userModel.update(existUser._id, updateData)
+
+    return pickUser(updatedUser)
+  } catch (error) { throw error }
+}
+
+const login = async (reqBody) => {
+  try {
+    // Query user tu database
+    const existUser = await userModel.findOneByEmail(reqBody.email)
+
+    // Cac buoc kiem tra can thiet
+    if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found!')
+    if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your account is not active!')
+    if (!bcryptjs.compareSync(reqBody.password, existUser.password)) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Password is incorrect!')
+
+    // Neu moi thu ok thi bat dau tao Tokens dang nhap de tra ve phia FE
+    // Thong tin de dinh kem trong JWT Token bao gom _id va email cua user
+    const userInfo = { _id: existUser._id, email: existUser.email }
+
+    // Tao ra 2 loai token, access token va refresh token de tra ve phia FE
+    const accessToken = await JwtProvider.generateToken(
+      userInfo,
+      env.ACCESS_TOKEN_SECRET_SIGNATURE,
+      env.ACCESS_TOKEN_LIFE
+    )
+    const refreshToken = await JwtProvider.generateToken(
+      userInfo,
+      env.REFRESH_TOKEN_SECRET_SIGNATURE,
+      env.REFRESH_TOKEN_LIFE
+    )
+
+    // Tra ve thong tin cua user kem theo 2 loai token
+    return { accessToken, refreshToken, ...pickUser(existUser) }
+  } catch (error) { throw error }
+}
+
 export const userService = {
-  createNew
+  createNew,
+  verifyAccount,
+  login
 }
