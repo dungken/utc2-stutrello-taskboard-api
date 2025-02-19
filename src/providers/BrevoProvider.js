@@ -5,7 +5,7 @@ import { env } from '~/config/environment'
 let apiInstance = new SibApiV3Sdk.TransactionalEmailsApi()
 let apiKey = apiInstance.authentications['apiKey']
 apiKey.apiKey = env.BREVO_API_KEY
-console.log('🚀 ~ env.BREVO_API_KEY:', env.BREVO_API_KEY)
+// console.log('🚀 ~ env.BREVO_API_KEY:', env.BREVO_API_KEY)
 
 const sendEmail = async (recipientEmail, customSubject, htmlContent) => {
   // Khoi tao mot cai sendSmtpEmail voi nhung thong tin can thiet
