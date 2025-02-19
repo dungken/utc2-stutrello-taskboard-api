@@ -4,6 +4,8 @@ import ApiError from '~/utils/ApiError'
 import bcryptjs from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
 import { pickUser } from '~/utils/fomatter'
+import { WEBSITE_DOMAIN } from '~/utils/constants'
+import { BrevoProvider } from '~/providers/BrevoProvider'
 
 
 const createNew = async (reqBody) => {
@@ -28,10 +30,24 @@ const createNew = async (reqBody) => {
     const getNewUser = await userModel.findOneById(createdUser.insertedId)
 
     // Gui mail cho nguoi dung xac thuc tai khoan
+    const verificationLink = `${WEBSITE_DOMAIN}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
+    const customSubject = 'StuTrello TaskBoard: Please verify your email address before using our services!'
+    const htmlContent = `
+      <h3>Hi ${getNewUser.displayName},</h3>
+      <p>Thank you for signing up with StuTrello TaskBoard. Please verify your email address by clicking the link below.</p>
+      <a href="${verificationLink}" target="_blank">Verify my email address</a>
+      <p>If you did not create an account with us, please ignore this email.</p>
+      <p>Thank you!</p>
+    `
+    // Goi toi Provider de gui mail
+    await BrevoProvider.sendEmail(getNewUser.email, customSubject, htmlContent)
 
-    // return tra ve du lieu cho phia controller
+    // Tra ve thong tin cho phia Controller
     return pickUser(getNewUser)
-  } catch (error) { throw error }
+  } catch (error) { 
+    console.log('🚀 ~ createNew ~ error:', error)
+    throw error 
+  }
 }
 
 export const userService = {
