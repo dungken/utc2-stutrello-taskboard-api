@@ -3,7 +3,7 @@ import { LIMIT_COMMON_FILE_SIZE, ALLOW_COMMON_FILE_TYPES } from '~/utils/validat
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 
-/** Hầu hết những thứ bên dưới đều có ở docs của multer, chỉ là tổ chức lại sao cho khoa học và gọn gàng nhất có thể
+/** Hầu hết những thứ bên dưới đều có ở docs của multer, chỉ là anh tổ chức lại sao cho khoa học và gọn gàng nhất có thể
 * https://www.npmjs.com/package/multer
 */
 

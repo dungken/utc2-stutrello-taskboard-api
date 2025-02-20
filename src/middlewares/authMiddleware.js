@@ -36,7 +36,7 @@ const isAuthorized = async (req, res, next) => {
       return
     }
 
-    // Nếu như cái accessToken nó không lợp lệ do bất kỳ điều gì khác vụ hết hạn thì chúng ta cứ thẳng tay trả về mã 401 cho phía FE gọi api sign_out luôn
+    // Nếu như cái accessToken nó không lợp lệ do bất kỳ điều gì khác vụ hết hạn thì cứ thẳng tay trả về mã 401 cho phía FE gọi api sign_out luôn
     next(new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized!'))
   }
 }

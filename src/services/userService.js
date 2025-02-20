@@ -1,72 +1,77 @@
-import { StatusCodes } from 'http-status-codes'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
+import { StatusCodes } from 'http-status-codes'
 import bcryptjs from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
-import { pickUser } from '~/utils/fomatter'
+import { pickUser } from '~/utils/formatters'
 import { WEBSITE_DOMAIN } from '~/utils/constants'
 import { BrevoProvider } from '~/providers/BrevoProvider'
-import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
+import { JwtProvider } from '~/providers/JwtProvider'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
 
 const createNew = async (reqBody) => {
   try {
-    // Kiem tra xem email da ton tai trong he thong chua
-    const exitstUser = await userModel.findOneByEmail(reqBody.email)
-    if (exitstUser) throw new ApiError(StatusCodes.CONFLICT, 'Email already exists!')
+    // Kiểm tra xem email đã tồn tại trong hệ thống của hay chưa
+    const existUser = await userModel.findOneByEmail(reqBody.email)
+    if (existUser) {
+      throw new ApiError(StatusCodes.CONFLICT, 'Email already exists!')
+    }
 
-    // Tao data de luu va database
-    // nameFromEmail: neu email la dungken@gmail.com thi nameFromEmail se la dungken
+    // Tạo data để lưu vào Database
+    // nameFromEmail: nếu email là dungken@gmail.com thì sẽ lấy được "dungken"
     const nameFromEmail = reqBody.email.split('@')[0]
     const newUser = {
       email: reqBody.email,
-      password: bcryptjs.hashSync(reqBody.password, 10), // tham so thu 2 la do phuc tap cua password
+      password: bcryptjs.hashSync(reqBody.password, 8), // Tham số thứ hai là độ phức tạp, giá trị càng cao thì băm càng lâu
       username: nameFromEmail,
-      displayName: nameFromEmail, // mac dinh la nameFromEmail, sau nay co the cap nhat
+      displayName: nameFromEmail, // mặc định để giống username khi user đăng ký mới, về sau làm tính năng update cho user
+      // isActive: true, // Mặc định bên userModel khi không khai báo sẽ là false, để true ở đây trong trường hợp  không muốn gửi mail xác nhận tài khoản hoặc gặp lỗi trong quá trình tạo tài khoản Brevo. Và nhớ comment dòng code số 50 sendEmail phía dưới lại.
       verifyToken: uuidv4()
     }
 
-    // Thuc hien luu thong tin user vao database
+    // Thực hiện lưu thông tin user vào Database
     const createdUser = await userModel.createNew(newUser)
     const getNewUser = await userModel.findOneById(createdUser.insertedId)
 
-    // Gui mail cho nguoi dung xac thuc tai khoan
+    // Gửi email cho người dùng xác thực tài khoản
     const verificationLink = `${WEBSITE_DOMAIN}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
-    const customSubject = 'StuTrello TaskBoard: Please verify your email address before using our services!'
+    const customSubject = 'UTC2 Students Trello TaskBoard: Please verify your email before using our services!'
     const htmlContent = `
-      <h3>Hi ${getNewUser.displayName},</h3>
-      <p>Thank you for signing up with StuTrello TaskBoard. Please verify your email address by clicking the link below.</p>
-      <a href="${verificationLink}" target="_blank">Verify my email address: ${verificationLink}</a>
-      <p>If you did not create an account with us, please ignore this email.</p>
-      <p>Thank you!</p>
+      <h3>Here is your verification link:</h3>
+      <h3>${verificationLink}</h3>
+      <h3>Sincerely,<br/> - DungKenDev - Một Lập Trình Viên - </h3>
     `
-    // Goi toi Provider de gui mail
+    // Gọi tới cái Provider gửi mail
+    /**
+     * Update kiến thức: Brevo mới update vụ Whitelist IP tương tự MongoDB Atlas, nếu  không gửi được mail thì cần phải config 0.0.0.0 hoặc uncheck cái review IP Address trong dashboard là được .
+     * https://app.brevo.com/security/authorised_ips
+     */
     await BrevoProvider.sendEmail(getNewUser.email, customSubject, htmlContent)
 
-    // Tra ve thong tin cho phia Controller
+    // return trả về dữ liệu cho phía Controller
     return pickUser(getNewUser)
-  } catch (error) {
-    throw error
-  }
+  } catch (error) { throw error }
 }
 
 const verifyAccount = async (reqBody) => {
   try {
-    // Query user tu database
+    // Query user trong Database
     const existUser = await userModel.findOneByEmail(reqBody.email)
 
-    // Cac buoc kiem tra can thiet
+    // Các bước kiểm tra cần thiết
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found!')
-    if (existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Account has been activated!')
-    if (existUser.verifyToken !== reqBody.token) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid token!')
+    if (existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your account is already active!')
+    if (reqBody.token !== existUser.verifyToken) {
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Token is invalid!')
+    }
 
-    // Neu nhu moi thu ok thi chung ta bat dau update lai thong tin user de verify account
+    // Nếu như mọi thứ ok thì bắt đầu update lại thông tin của thằng user để verify account
     const updateData = {
       isActive: true,
       verifyToken: null
     }
-    // Thuc hien update thong tin user
+    // Thực hiện update thông tin user
     const updatedUser = await userModel.update(existUser._id, updateData)
 
     return pickUser(updatedUser)
@@ -75,33 +80,36 @@ const verifyAccount = async (reqBody) => {
 
 const login = async (reqBody) => {
   try {
-    // Query user tu database
+    // Query user trong Database
     const existUser = await userModel.findOneByEmail(reqBody.email)
 
-    // Cac buoc kiem tra can thiet
+    // Các bước kiểm tra cần thiết
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found!')
     if (!existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your account is not active!')
-    if (!bcryptjs.compareSync(reqBody.password, existUser.password)) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Password is incorrect!')
+    if (!bcryptjs.compareSync(reqBody.password, existUser.password)) {
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your Email or Password is incorrect!')
+    }
 
-    // Neu moi thu ok thi bat dau tao Tokens dang nhap de tra ve phia FE
-    // Thong tin de dinh kem trong JWT Token bao gom _id va email cua user
+    /** Nếu mọi thứ ok thì bắt đầu tạo Tokens đăng nhập để trả về cho phía FE */
+    // Tạo thông tin để đính kèm trong JWT Token: bao gồm _id và email của user
     const userInfo = { _id: existUser._id, email: existUser.email }
 
-    // Tao ra 2 loai token, access token va refresh token de tra ve phia FE
+    // Tạo ra 2 loại token, accessToken và refreshToken để trả về cho phía FE
     const accessToken = await JwtProvider.generateToken(
       userInfo,
       env.ACCESS_TOKEN_SECRET_SIGNATURE,
-      // 5
+      // 5 // 5 giây
       env.ACCESS_TOKEN_LIFE
     )
+
     const refreshToken = await JwtProvider.generateToken(
       userInfo,
       env.REFRESH_TOKEN_SECRET_SIGNATURE,
-      // 15
+      // 15 // 15 giây
       env.REFRESH_TOKEN_LIFE
     )
 
-    // Tra ve thong tin cua user kem theo 2 loai token
+    // Trả về thông tin của user kèm theo 2 cái token vừa tạo ra
     return { accessToken, refreshToken, ...pickUser(existUser) }
   } catch (error) { throw error }
 }
@@ -113,9 +121,8 @@ const refreshToken = async (clientRefreshToken) => {
       clientRefreshToken,
       env.REFRESH_TOKEN_SECRET_SIGNATURE
     )
-    // console.log('🚀 ~ refreshToken ~ refreshTokenDecoded:', refreshTokenDecoded)
 
-    // Đoạn này vì chúng ta chỉ lưu những thông tin unique và cố định của user trong token rồi, vì vậy có thể lấy luôn từ decoded ra, tiết kiệm query vào DB để lấy data mới.
+    // Đoạn này vì chỉ lưu những thông tin unique và cố định của user trong token rồi, vì vậy có thể lấy luôn từ decoded ra, tiết kiệm query vào DB để lấy data mới.
     const userInfo = { _id: refreshTokenDecoded._id, email: refreshTokenDecoded.email }
 
     // Bước 02: Tạo ra cái accessToken mới
@@ -146,13 +153,14 @@ const update = async (userId, reqBody, userAvatarFile) => {
       if (!bcryptjs.compareSync(reqBody.current_password, existUser.password)) {
         throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your Current Password is incorrect!')
       }
-      // Nếu như current_password là đúng thì chúng ta sẽ hash một cái mật khẩu mới và update lại vào DB:
+      // Nếu như current_password là đúng thì sẽ hash một cái mật khẩu mới và update lại vào DB:
       updatedUser = await userModel.update(existUser._id, {
         password: bcryptjs.hashSync(reqBody.new_password, 8)
       })
     } else if (userAvatarFile) {
       // Trường hợp upload file lên Cloud Storage, cụ thể là Cloudinary
       const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, 'users')
+      // console.log('uploadResult: ', uploadResult)
 
       // Lưu lại url (secure_url) của cái file ảnh vào trong Database
       updatedUser = await userModel.update(existUser._id, {

@@ -1,27 +1,31 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { boardRoute } from './boardRoute'
-import { columnRoute } from './columnRoute'
-import { cardRoute } from './cardRoute'
-import { userRoute } from './userRoute'
+import { boardRoute } from '~/routes/v1/boardRoute'
+import { columnRoute } from '~/routes/v1/columnRoute'
+import { cardRoute } from '~/routes/v1/cardRoute'
+import { userRoute } from '~/routes/v1/userRoute'
+import { invitationRoute } from '~/routes/v1/invitationRoute'
 
 const Router = express.Router()
 
-/** Check API V1/status */
+/** Check APIs v1/status */
 Router.get('/status', (req, res) => {
   res.status(StatusCodes.OK).json({ message: 'APIs V1 are ready to use.' })
 })
 
-/** Boards APIs */
+/** Board APIs */
 Router.use('/boards', boardRoute)
 
-/** Columns APIs */
+/** Column APIs */
 Router.use('/columns', columnRoute)
 
 /** Cards APIs */
 Router.use('/cards', cardRoute)
 
-/** Users APIs */
+/** User APIs */
 Router.use('/users', userRoute)
+
+/** Invitation APIs */
+Router.use('/invitations', invitationRoute)
 
 export const APIs_V1 = Router

@@ -1,13 +1,13 @@
+import { MongoClient, ServerApiVersion } from 'mongodb'
 import { env } from '~/config/environment'
-const { MongoClient, ServerApiVersion } = require('mongodb')
 
-// Khoi tao mot doi tuong trelloDatabaseInstance la null de thao tac voi database (vi chua ket noi)
+// Khởi tạo một đối tượng trelloDatabaseInstance ban đầu là null (vì chưa connect)
 let trelloDatabaseInstance = null
 
-// Khoi tao mot doi tuong mongoClientInstance de ket noi voi MongoDB
+// Khởi tạo một đối tượng mongoClientInstance để connect tới MongoDB
 const mongoClientInstance = new MongoClient(env.MONGODB_URI, {
-  // Luu y: serverApi phai duoc cung cap de su dung cac tinh nang moi nhat cua MongoDB
-  // Doc them: https://www.mongodb.com/docs/drivers/node/current/fundamentals/stable-api/
+  // Lưu ý: cái serverApi có từ phiên bản MongoDB 5.0.0 trỏ lên, có thể không cần dùng nó, còn nếu dùng nó là sẽ chỉ định một cái Stable API Version của MongoDB
+  // Đọc thêm ở đây: https://www.mongodb.com/docs/drivers/node/current/fundamentals/stable-api/
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
@@ -15,24 +15,23 @@ const mongoClientInstance = new MongoClient(env.MONGODB_URI, {
   }
 })
 
-// Ket noi toi Database
+// Kết nối tới Database
 export const CONNECT_DB = async () => {
-  // Goi ket noi toi MongoDB Atlas voi URI da khai bao trong than cua mongoClientInstance
+  // Gọi kết nối tới MongoDB Atlas với URI đã khai báo trong thân của mongoClientInstance
   await mongoClientInstance.connect()
 
-  // Ket noi thanh cong thi lay ra Database theo ten va gan nguoc no lai vao bien trelloDatabaseInstance
+  // Kết nối thành công thì lấy ra Database theo tên và gán ngược nó lại vào biến trelloDatabaseInstance ở trên
   trelloDatabaseInstance = mongoClientInstance.db(env.DATABASE_NAME)
 }
 
-// Dong ket noi toi Database
+// Đóng kết nối tới Database khi cần, nếu muốn catch lỗi nếu có thì có thể thêm try catch tùy. Không thì cứ giữ nguyên code như mình để là được
 export const CLOSE_DB = async () => {
-  // Dong ket noi voi MongoDB
   await mongoClientInstance.close()
 }
 
-// Function GET_DB (khong async) de lay ra doi tuong trelloDatabaseInstance sau khi da ket noi thanh cong voi MongoDB de co the su dung trong cac file khac
-// Luu y: Phai ket noi voi MongoDB truoc khi su dung ham nay
+// Function GET_DB (không async) này có nhiệm vụ export ra cái Trello Database Instance sau khi đã connect thành công tới MongoDB để sử dụng ở nhiều nơi khác nhau trong code.
+// Lưu ý phải đảm bảo chỉ luôn gọi cái GET_DB này sau khi đã kết nối thành công tới MongoDB
 export const GET_DB = () => {
-  if (!trelloDatabaseInstance) throw new Error('Must connect to database first!')
+  if (!trelloDatabaseInstance) throw new Error('Must connect to Database first!')
   return trelloDatabaseInstance
 }

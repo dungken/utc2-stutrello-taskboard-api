@@ -1,24 +1,24 @@
 import Joi from 'joi'
-import { EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
+import { EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
 
-// Define tam 2 roles cho users, tuy viec mo rong du an
+// Define tạm 2 roles cho user, tùy việc mở rộng dự án như thế nào mà mọi người có thể thêm role tùy ý sao cho phù hợp sau.
 const USER_ROLES = {
   CLIENT: 'client',
   ADMIN: 'admin'
 }
 
 // Define Collection (name & schema)
-const COLUMN_COLLECTION_NAME = 'users'
-const COLUMN_COLLECTION_SCHEMA = Joi.object({
-  email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+const USER_COLLECTION_NAME = 'users'
+const USER_COLLECTION_SCHEMA = Joi.object({
+  email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE), // unique
   password: Joi.string().required(),
-  // username cat ra tu email se co kha nang khong unique boi vi se co nhung email giong nhau
+  // username cắt ra từ email sẽ có khả năng không unique bởi vì sẽ có những tên email trùng nhau nhưng từ các nhà cung cấp khác nhau
   username: Joi.string().required().trim().strict(),
   displayName: Joi.string().required().trim().strict(),
   avatar: Joi.string().default(null),
-  role: Joi.string().valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN).default(USER_ROLES.CLIENT),
+  role: Joi.string().valid(...Object.values(USER_ROLES)).default(USER_ROLES.CLIENT),
 
   isActive: Joi.boolean().default(false),
   verifyToken: Joi.string(),
@@ -28,54 +28,57 @@ const COLUMN_COLLECTION_SCHEMA = Joi.object({
   _destroy: Joi.boolean().default(false)
 })
 
-// Define fields that cannot be updated
+// Chỉ định ra những Fields mà không muốn cho phép cập nhật trong hàm update()
 const INVALID_UPDATE_FIELDS = ['_id', 'email', 'username', 'createdAt']
 
 const validateBeforeCreate = async (data) => {
-  return await COLUMN_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
+  return await USER_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
 const createNew = async (data) => {
   try {
     const validData = await validateBeforeCreate(data)
-    return await GET_DB().collection(COLUMN_COLLECTION_NAME).insertOne(validData)
+    const createdUser = await GET_DB().collection(USER_COLLECTION_NAME).insertOne(validData)
+    return createdUser
   } catch (error) { throw new Error(error) }
 }
 
 const findOneById = async (userId) => {
   try {
-    return await GET_DB().collection(COLUMN_COLLECTION_NAME).findOne({ _id: new ObjectId(String(userId)) })
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: new ObjectId(userId) })
+    return result
   } catch (error) { throw new Error(error) }
 }
 
 const findOneByEmail = async (emailValue) => {
   try {
-    return await GET_DB().collection(COLUMN_COLLECTION_NAME).findOne({ email: emailValue })
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOne({ email: emailValue })
+    return result
   } catch (error) { throw new Error(error) }
 }
 
 const update = async (userId, updateData) => {
   try {
-    // Remove invalid fields
+    // Lọc những field mà không cho phép cập nhật linh tinh
     Object.keys(updateData).forEach(fieldName => {
       if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
         delete updateData[fieldName]
       }
     })
 
-    const result = await GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
-      { _id: new ObjectId(String(userId)) },
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(userId) },
       { $set: updateData },
-      { returnDocument: 'after' }
+      { returnDocument: 'after' } // sẽ trả về kết quả mới sau khi cập nhật
     )
-
     return result
   } catch (error) { throw new Error(error) }
 }
 
 export const userModel = {
-  COLUMN_COLLECTION_NAME,
-  COLUMN_COLLECTION_SCHEMA,
+  USER_COLLECTION_NAME,
+  USER_COLLECTION_SCHEMA,
+  USER_ROLES,
   createNew,
   findOneById,
   findOneByEmail,

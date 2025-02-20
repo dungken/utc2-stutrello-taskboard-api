@@ -1,6 +1,6 @@
 import Joi from 'joi'
-import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
+import { StatusCodes } from 'http-status-codes'
 import { EMAIL_RULE, EMAIL_RULE_MESSAGE, PASSWORD_RULE, PASSWORD_RULE_MESSAGE } from '~/utils/validators'
 
 const createNew = async (req, res, next) => {

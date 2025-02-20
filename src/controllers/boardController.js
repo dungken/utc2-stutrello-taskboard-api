@@ -3,27 +3,38 @@ import { boardService } from '~/services/boardService'
 
 const createNew = async (req, res, next) => {
   try {
-    // Dieu huong du lieu sang tang Service de xu ly
-    const createdBoard = await boardService.createNew(req.body)
+    // console.log('req.body: ', req.body)
+    // console.log('req.query: ', req.query)
+    // console.log('req.params: ', req.params)
+    // console.log('req.files: ', req.files)
+    // console.log('req.cookies: ', req.cookies)
+    // console.log('req.jwtDecoded: ', req.jwtDecoded)
 
-    // Sau khi xu ly xong, tra ve ket qua cho Client
+    const userId = req.jwtDecoded._id
+
+    // Điều hướng dữ liệu sang tầng Service
+    const createdBoard = await boardService.createNew(userId, req.body)
+
+    // Có kết quả thì trả về phía Client
     res.status(StatusCodes.CREATED).json(createdBoard)
   } catch (error) { next(error) }
 }
 
 const getDetails = async (req, res, next) => {
   try {
-    // Sau nay co  them userId vao req, de lay duoc board cua user do
-    const board = await boardService.getDetails(req.params.id) // req.params.id la id cua board
+    const userId = req.jwtDecoded._id
+    const boardId = req.params.id
+    const board = await boardService.getDetails(userId, boardId)
     res.status(StatusCodes.OK).json(board)
   } catch (error) { next(error) }
 }
 
 const update = async (req, res, next) => {
   try {
-    const board = await boardService.update(req.params.id, req.body) // req.params.id la id cua board
+    const boardId = req.params.id
+    const updatedBoard = await boardService.update(boardId, req.body)
 
-    res.status(StatusCodes.OK).json(board)
+    res.status(StatusCodes.OK).json(updatedBoard)
   } catch (error) { next(error) }
 }
 
@@ -48,6 +59,7 @@ const getBoards = async (req, res, next) => {
     res.status(StatusCodes.OK).json(results)
   } catch (error) { next(error) }
 }
+
 
 export const boardController = {
   createNew,

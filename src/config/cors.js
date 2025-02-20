@@ -1,4 +1,3 @@
-
 import { WHITELIST_DOMAINS } from '~/utils/constants'
 import { env } from '~/config/environment'
 import { StatusCodes } from 'http-status-codes'
@@ -7,18 +6,13 @@ import ApiError from '~/utils/ApiError'
 // Cấu hình CORS Option
 export const corsOptions = {
   origin: function (origin, callback) {
-    // Cho phép việc gọi API bằng POSTMAN trên môi trường dev,
-    // Thông thường khi sử dụng postman thì cái origin sẽ có giá trị là undefined
-    // if (!origin && env.BUILD_MODE === 'dev') {
-    //   return callback(null, true)
-    // }
-
-    // Neu moi truong la local dev thi cho phep
+    // Nếu môi trường là local dev thì cho qua luôn
     if (env.BUILD_MODE === 'dev') {
       return callback(null, true)
     }
 
-    // Nguoi lai thi hien tai dang co 1 truong hop la: env.BUILD_MODE === 'prod'
+    // Ngược lại thì hiện tại code đang làm còn 1 trường hợp là:
+    // env.BUILD_MODE === 'production'
 
     // Kiểm tra xem origin có phải là domain được chấp nhận hay không
     if (WHITELIST_DOMAINS.includes(origin)) {

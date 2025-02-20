@@ -18,22 +18,24 @@ const createNew = async (req, res, next) => {
 }
 
 const update = async (req, res, next) => {
+  // Lưu ý không dùng hàm required() trong trường hợp Update
   const correctCondition = Joi.object({
-    // Neu can lam tinh nang di chuyen column sang board khac thi them boardId
+    // Nếu cần làm tính năng di chuyển Column sang Board khác thì mới thêm validate boardId
     // boardId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
     title: Joi.string().min(3).max(50).trim().strict(),
-    columnOrderIds: Joi.array().items(
+    cardOrderIds: Joi.array().items(
       Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
-    ).default([])
+    )
   })
 
   try {
-    // Chi dinh abortEarly: false de hien thi tat ca loi
+    // Chỉ định abortEarly: false để trường hợp có nhiều lỗi validation thì trả về tất cả lỗi
+    // Đối với trường hợp update, cho phép Unknown để không cần đẩy một số field lên
     await correctCondition.validateAsync(req.body, {
       abortEarly: false,
-      allowUnknown: true // Cho phep request co them cac truong khac khong duoc dinh nghia trong schema
+      allowUnknown: true
     })
-    // Validate du lieu thanh cong thi request di tiep sang Controller
+
     next()
   } catch (error) {
     next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
@@ -44,7 +46,6 @@ const deleteItem = async (req, res, next) => {
   const correctCondition = Joi.object({
     id: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
   })
-
   try {
     await correctCondition.validateAsync(req.params)
     next()
